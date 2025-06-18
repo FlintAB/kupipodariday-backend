@@ -116,10 +116,6 @@ export class WishesService {
       throw new NotFoundException(WishErrors.NotFound);
     }
 
-    if (originalWish.owner.id === user.id) {
-      throw new BadRequestException(WishErrors.OwnWishCopy);
-    }
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
