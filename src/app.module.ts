@@ -1,35 +1,31 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import config from './config/config';
+import { DatabaseConfigFactory } from './config/database.config';
 import { UsersModule } from './users/users.module';
-import { WhishesModule } from './whishes/whishes.module';
+import { WishesModule } from './wishes/wishes.module';
 import { WishlistsModule } from './wishlists/wishlists.module';
 import { OffersModule } from './offers/offers.module';
+import { AuthModule } from './auth/auth.module';
+import { HashModule } from './hash/hash.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
+    ConfigModule.forRoot({ load: [config], isGlobal: true }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get('DB_HOST'),
-        port: config.get('DB_PORT'),
-        username: config.get('DB_USERNAME'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_NAME'),
-        synchronize: true,
-        autoLoadEntities: true,
-      }),
       inject: [ConfigService],
+      useClass: DatabaseConfigFactory,
     }),
     UsersModule,
-    WhishesModule,
+    WishesModule,
     WishlistsModule,
     OffersModule,
+    HashModule,
+    AuthModule,
   ],
+  controllers: [AppController],
+  providers: [],
 })
 export class AppModule {}

@@ -1,19 +1,26 @@
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import helmet from 'helmet';
-import { nestCsrf } from 'ncsrf';
-import * as cookieParser from 'cookie-parser';
+import { ConfigService } from '@nestjs/config';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { cors: true });
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('port');
+  const httpAdapterHost = app.get(HttpAdapterHost);
+
+  app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost));
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      skipMissingProperties: true,
+    }),
   );
-  app.use(helmet());
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  app.use(cookieParser());
-  app.use(nestCsrf());
-  await app.listen(process.env.APP_PORT ?? 3000);
+
+  await app.listen(port);
 }
+
 bootstrap();

@@ -1,34 +1,59 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseFilters,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
+import { GetUserId } from '../common/decorators/get-user.decorator';
+import { ValidationFilter } from '../common/filters/validation.filter';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FindUserDto } from './dto/find-user.dto';
+import { PasswordInterceptor } from '../common/interceptors/password.interceptor';
+import { AuthGuardJwt } from '../common/guards/auth-quard-jwt.service';
 
+@UseGuards(AuthGuardJwt)
+@UseInterceptors(PasswordInterceptor)
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @Get('me')
+  getOwn(@GetUserId() id: number) {
+    return this.usersService.findById(id);
   }
 
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @Patch('me')
+  @UseFilters(ValidationFilter)
+  updateCurrentUser(
+    @GetUserId() id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.update(id, updateUserDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+  @Get('me/wishes')
+  getOwnWishes(@GetUserId() id: number) {
+    return this.usersService.getOwnWishes(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @Get(':username')
+  getUserByUsername(@Param('username') username: string) {
+    return this.usersService.findOne(username);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @Get(':username/wishes')
+  getWishesByUsername(@Param('username') username: string) {
+    return this.usersService.findWishes(username);
+  }
+
+  @Post('find')
+  findUsers(@Body() dto: FindUserDto) {
+    return this.usersService.findMany(dto);
   }
 }
